@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/GLSL">
+        <file>shaders/raycasting.fsh</file>
+        <file>shaders/raycasting.vsh</file>
+    </qresource>
+</RCC>
