@@ -27,12 +27,24 @@ GLWidget::GLWidget(QWidget *parent)
 {
     m_rotMatrix.SetIdentity();
     m_rotInvMatrix.SetIdentity();
+    vs=NULL;
+    fs=NULL;
+    glsl=NULL;
+    tf=NULL;
+    volume = 0;
+    tfID = 0;
+    volTex8 = NULL;
+    volTex16 = NULL;
 }
 
 GLWidget::~GLWidget()
 {
     glDeleteLists(primitiveList,1);
     makeCurrent();
+    if(glsl) delete glsl;
+    if(vs) delete vs;
+    if(fs) delete fs;
+    if(tf) delete tf;
 }
 
 QSize GLWidget::minimumSizeHint() const
@@ -118,6 +130,20 @@ void GLWidget::initializeGL()
         glEnd();
     glEndList();
     CheckErrorsGL("initializeGL-3");
+
+    glActiveTexture(GL_TEXTURE1_ARB);
+    glEnable(GL_TEXTURE_1D);
+    glGenTextures(1, &tfID);
+    glBindTexture(GL_TEXTURE_1D, tfID);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    RGBAf *pTexture = new RGBAf[TF_SIZE];
+    memset(pTexture, 0, TF_SIZE * sizeof(RGBAf));
+    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+    glTexImage1D(GL_TEXTURE_1D, 0, 4, TF_SIZE, 0, GL_RGBA, GL_FLOAT, pTexture);
+    delete [] pTexture;
 }
 
 void GLWidget::paintGL()
@@ -126,7 +152,7 @@ void GLWidget::paintGL()
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
-    //glsl->bind();
+    glsl->bind();
 
     glTranslatef(trans.v[0], trans.v[1], trans.v[2]); //traslada
     glTranslatef(0.0f,0.0f,-3.0f);
@@ -145,15 +171,52 @@ void GLWidget::paintGL()
     glColor3f(0.5f, 0.5f, 0.5f);
     glTranslatef(-0.5f,-0.5f,-0.5f);
 
-    glActiveTextureARB(GL_TEXTURE0_ARB);
+    glActiveTexture(GL_TEXTURE0_ARB);
     glEnable(GL_TEXTURE_3D);
-    glBindTexture(GL_TEXTURE_3D, volume);
+    if(reloadVol) {
+        if(volume)
+            glDeleteTextures(1, &volume);
+
+        glGenTextures(1, &volume);
+        glBindTexture(GL_TEXTURE_3D, volume);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+        if(volBits==8) {
+            glTexImage3D(GL_TEXTURE_3D, 0, 1, volSize[0], volSize[1], volSize[2], 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, volTex8);
+            delete [] volTex8;
+            volTex8 = NULL;
+        }else if(volBits==16) {
+            glTexImage3D(GL_TEXTURE_3D, 0, 1, volSize[0], volSize[1], volSize[2], 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, volTex16);
+            delete [] volTex16;
+            volTex16 = NULL;
+        }
+
+        reloadFT = false;
+    }else{
+        if(volume)
+            glBindTexture(GL_TEXTURE_3D, volume);
+    }
     glsl->setInt("volume", 0);
 
-    glActiveTextureARB(GL_TEXTURE1_ARB);
-    glEnable(GL_TEXTURE_3D);
-    glBindTexture(GL_TEXTURE_3D, integrals);
-    glsl->setInt("integrals", 1);
+    glActiveTexture(GL_TEXTURE1_ARB);
+    glEnable(GL_TEXTURE_1D);
+    if(reloadFT) {
+        glBindTexture(GL_TEXTURE_1D, tfID);
+        RGBAf *pTexture = new RGBAf[TF_SIZE];
+        memset(pTexture, 0, TF_SIZE * sizeof(RGBAf));
+        tf->GetPostClassificationMap(pTexture);
+        glTexSubImage1D(GL_TEXTURE_1D, 0, 0, TF_SIZE, GL_RGBA, GL_FLOAT, pTexture);
+        delete [] pTexture;
+        reloadFT = false;
+    }else{
+        glBindTexture(GL_TEXTURE_1D, tfID);
+    }
+    glsl->setInt("tf", 1);
 
     glCallList(primitiveList);
 
@@ -197,7 +260,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         rotmat.SetIdentity();
         rotmat.Rotate(+mouseVec.Modulus()*0.01f, perpendMouseVec[0], perpendMouseVec[1], 0);
         m_rotMatrix.PreMult(rotmat);
-        updateGL();
     }else if (event->buttons() & Qt::RightButton) {
         setXTranslation(dx);
         setYTranslation(dy);
@@ -205,5 +267,34 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         setXTranslation(dx);
         setZTranslation(dy);
     }
+    updateGL();
     lastPos = event->pos();
+}
+
+void GLWidget::setFT(CTransferFunction *_tf) {
+    if(tf) delete tf;
+    tf = _tf;
+    reloadFT = true;
+    updateGL();
+}
+
+void GLWidget::setVol(unsigned char *vol, int w, int h, int z) {
+    volBits = 8;
+    volTex8 = new unsigned char[w*h*z];
+    memcpy(volTex8, vol, sizeof(unsigned char)*w*h*z);
+    volSize[0] = w;
+    volSize[1] = h;
+    volSize[2] = z;
+    updateGL();
+}
+
+void GLWidget::setVol(unsigned short *vol, int w, int h, int z) {
+    volBits = 16;
+    volTex16 = new unsigned short[w*h*z];
+    memcpy(volTex16, vol, sizeof(unsigned short)*w*h*z);
+    volSize[0] = w;
+    volSize[1] = h;
+    volSize[2] = z;
+    reloadVol = true;
+    updateGL();
 }

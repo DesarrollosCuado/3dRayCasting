@@ -20,3 +20,6 @@ void RayCast3d::keyPressEvent(QKeyEvent * e ){
 
 	ui.widget->updateGL();
 }
+void RayCast3d::updateFT(CTFNode *pNodes, int nPoints){
+    ui.widget->setFT(new CTransferFunction(pNodes, nPoints));
+}

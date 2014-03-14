@@ -9,6 +9,7 @@
 #include <qfile.h>
 #include <qfiledialog.h>
 #include "ui_raycast3d.h"
+#include "transferfunction.h"
 
 using namespace std;
 
@@ -21,6 +22,7 @@ public:
     ~RayCast3d();
     void resizeEvent(QResizeEvent * e);
     void keyPressEvent(QKeyEvent * e);
+    void updateFT(CTFNode *pNodes, int nPoint);
 
 private:
     Ui::RayCast3dClass ui;
