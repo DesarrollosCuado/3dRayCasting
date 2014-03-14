@@ -2,11 +2,7 @@
 #define GLWIDGET_H
 
 #include <algorithm>
-#ifdef __unix__
-    #include <GL/glext.h>
-#endif
 #include <GL/glu.h>
-
 #include <QtGui>
 #include <QtOpenGL>
 
@@ -50,6 +46,10 @@ private:
     GLuint primitiveList;
     GLuint volume;
     GLuint tfID;
+    QTimer *m_timer;
+    QTime m_time;
+    unsigned int fps;
+    unsigned int sec;
     unsigned int volSize[3];
     unsigned char volBits;
     unsigned char *volTex8;

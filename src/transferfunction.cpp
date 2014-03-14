@@ -1,11 +1,4 @@
 #include "transferfunction.h"
-#include "util.h"
-
-#define CLAMP_RGBA(input, minimum, maximum) \
-  if (input.m_r < minimum) input.m_r = minimum; else if (input.m_r > maximum) input.m_r = maximum; \
-  if (input.m_g < minimum) input.m_g = minimum; else if (input.m_g > maximum) input.m_g = maximum; \
-  if (input.m_b < minimum) input.m_b = minimum; else if (input.m_b > maximum) input.m_b = maximum; \
-  if (input.m_a < minimum) input.m_a = minimum; else if (input.m_a > maximum) input.m_a = maximum; 
 
 CTransferFunction::CTransferFunction(void)
 {

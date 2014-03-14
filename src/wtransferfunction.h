@@ -16,14 +16,17 @@ public:
     vector < TFPoint > points;
     void *_parent;
     void updateTF();
+    bool isChanged(CTFNode **pNodes, int *nPoints);
     void setPointers(vector < TFPoint > *_points);
 	Ui::WTransferFunctionClass ui;
 
 private:
-    //void resizeEvent(QResizeEvent *e);
+    CTFNode *pNodes;
+    int nPoints;
+    bool tfChange;
 
 private slots:
-    void openVolume();
+    void on_openVol_clicked();
 
 public slots:
 };

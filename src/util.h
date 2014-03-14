@@ -1,19 +1,44 @@
-#pragma once
 #ifndef _util_h_
 #define _util_h_
 
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 #include<algorithm>
-#include <QtOpenGL>
-#include "Math/Matrix4x4f.h"
-#include "Math/Vector3Df.h"
-#include "Math/Vector4Df.h"
+#include<QFile>
+#include<QFileInfo>
 
 #define FAST_INT_CEIL(a,b) ( (a)/(b) + ( (a) % (b) != 0 ) )
 
+#define CLAMP_RGBA(input, minimum, maximum) \
+  if (input.m_r < minimum) input.m_r = minimum; else if (input.m_r > maximum) input.m_r = maximum; \
+  if (input.m_g < minimum) input.m_g = minimum; else if (input.m_g > maximum) input.m_g = maximum; \
+  if (input.m_b < minimum) input.m_b = minimum; else if (input.m_b > maximum) input.m_b = maximum; \
+  if (input.m_a < minimum) input.m_a = minimum; else if (input.m_a > maximum) input.m_a = maximum;
+
+#define TF_BITS 8
+#define TF_SIZE (1<<TF_BITS)
+#define EMAX_CONTROL_POINTS TF_SIZE
+
 using namespace std;
+
+typedef struct CTFNode
+{
+  union
+  {
+    struct
+    {
+      float m_r, m_g, m_b, m_y, m_x;
+    };
+    float m_values[5];
+  };
+  inline float & operator [](int i)
+  {
+    return m_values[i];
+  }
+} ENode;
+
 template <class T>
 class RGBAt
 {
@@ -72,51 +97,61 @@ template class RGBAt<unsigned int>;
 template class RGBAt<unsigned char>;
 template class RGBAt<float>;
 
-enum
-{
-  SCA_DEFAULT,
-  SCA_GAINING,
-  SCA_OPTIMAL
-};
+#include <QInputDialog>
+#include <QFileDialog>
 
-class CUtil  
-{
+class ReadVolume {
 public:
-  static int  m_scaMethod;
-  static void DrawBox(float x0, float y0, float z0, float x1, float y1, float z1);
-  static char * SkipWord(char *str, char *theword);
-  static char * RemoveEnter(char *str);
-  static void Abort(int ret, char *fmt, ...);
-  static int  NextPowerOf2(int value);
-  static bool IsPowerOf2(int value);
-  static int  IsExtensionSupported(const char *extension);
-  static char *TextFileRead(char *fn);
+    static bool read(unsigned char **vol, int *w, int *h, int *z, int *bits) {
+        QString fileName = QFileDialog::getOpenFileName(NULL, "Open Volume",
+                                                         "",
+                                                         "Volume (*.pvm *.raw)");
 
-  static void ***Alloc3D(int z, int y, int x, int elemSize);
-  static void Free3D(void ***V, int z);
-  static long FileSize(FILE *f);
-  static void Abort(int code);
-  static void Vsync(bool enable);
-  static void **Alloc2DCont(int rows, int cols, int elemSize);
-  static void Free2DCont(void **data);
-  static void Swap(float &a, float &b);
-  static void Swap(int   &a, int   &b);
-  static void Swap(unsigned char &a, unsigned char &b);
-  static void SendMatrixToOpenGL(CMatrix4x4f mat);
-  static int  SaveBMP(const char *filename, int nCols, int nRows, unsigned char *buffer);
-  static void AddLine(char *filename, char *fmt, ... );
-  static void DrawSolidCube(float x0, float y0, float z0, float x1, float y1, float z1);
-  static void DrawBackFacedCube(float x0, float y0, float z0, float x1, float y1, float z1, GLenum renderType=GL_LINE);
- static float MinDistance(const CVector4Df &point, const CVector3Df &boxMin, const CVector3Df &boxMax);
- static float MinDistanceEucli(const CVector4Df &point, const CVector4Df &boxMin, const CVector4Df &boxMax);
- static float MinDistance(const CVector4Df &point, const CVector4Df &boxMin, const CVector4Df &boxMax);
- static float MinSqrDistance(const CVector4Df &point, const CVector3Df &boxMin, const CVector3Df &boxMax);
- static float MaxDistance(const CVector4Df &point, const CVector3Df &boxMin, const CVector3Df &boxMax);
-  static void RGB2LUV(const CVector3Df &rgb, CVector3Df &luv);
-  static float rand01();
-  CUtil();
-  virtual ~CUtil();
+        if(fileName.isEmpty() || fileName.isNull())
+            return false;
 
+        QFile f(fileName);
+        if(f.open(QIODevice::ReadOnly)){
+            QString ext = fileName.mid(fileName.lastIndexOf(".")+1).toLower();
+            if(ext=="pvm"){
+
+            }else{
+                bool ok;
+                *w = QInputDialog::getInt(NULL, "Volumen RAW", "Ancho:", 0, 0, 1024, 1, &ok);
+                if(!ok) {
+                    f.close();
+                    return false;
+                }
+                *h= QInputDialog::getInt(NULL, "Volumen RAW", "Alto:", 0, 0, 1024, 1, &ok);
+                if(!ok) {
+                    f.close();
+                    return false;
+                }
+                *z = QInputDialog::getInt(NULL, "Volumen RAW", "Profundidad:", 0, 0, 1024, 1, &ok);
+                if(!ok) {
+                    f.close();
+                    return false;
+                }
+                *bits = QInputDialog::getInt(NULL, "Volumen RAW", "Bits:", 8, 8, 16, 1, &ok);
+                if(!ok) {
+                    f.close();
+                    return false;
+                }
+                if(*bits!=8 && *bits!=16) {
+                    f.close();
+                    return false;
+                }
+                if((*w)*(*h)*(*z)*((*bits)/8)!=f.size()) {
+                    f.close();
+                    return false;
+                }
+
+                *vol = new unsigned char[f.size()];
+                memcpy(*vol, f.readAll().data(), f.size());
+                return true;
+            }
+        }
+    }
 };
 
 #endif 

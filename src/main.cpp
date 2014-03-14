@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     qInstallMessageHandler(customMessageHandler);
-/*
+
     if ((QGLFormat::openGLVersionFlags() & QGLFormat::OpenGL_Version_1_5) == 0) {
         QMessageBox::critical(0, "OpenGL features missing","OpenGL version 1.5 or higher is required to run this project.\nThe program will now exit.");
         return -1;
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
         return -3;
     }
     delete widget;
-*/
+
     qDebug()<<"Extenciones soportadas: "<<(const char*)glGetString(GL_EXTENSIONS);
     RayCast3d w;
     WTransferFunction tf(&w);
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     tf._parent = &w;
     vector <TFPoint> tmp;
     tmp.push_back(TFPoint(QPoint(0,0), QColor(0,0,0)));
-    tmp.push_back(TFPoint(QPoint(511,255), QColor(0,0,0)));
+    tmp.push_back(TFPoint(QPoint(511,255), QColor(255,255,255)));
     tf.setPointers(&tmp);
     w.show();
     tf.show();

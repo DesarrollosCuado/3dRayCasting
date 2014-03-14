@@ -11,13 +11,11 @@
 #include <QColor>
 #include <QRgb>
 
-#include "Math/Vector3Df.h"
-
-#define CLAMP(x, minx, maxx) max(min(x, maxx), minx)
-
 using namespace std;
 
-#define PI 3.1415926535897932					// This is our famous PI
+#define CLAMP(x, minx, maxx) max(min(x, maxx), minx)
+#define PI 3.1415926535897932
+
 class MyMath{
 public:
     static float degreesToRadians(float degrees)
@@ -30,20 +28,15 @@ public:
 struct TFPoint
 {
 public:
+    TFPoint(const TFPoint &o): pos(o.pos), color(o.color){ }
+    TFPoint(const QPoint &q): pos(q) { }
+    TFPoint(const QRgb &r) : pos(), color(r) { }
+    TFPoint() : pos(), color(QColor(255,255,255).rgba()) { }
+    TFPoint(const QPoint &q, const QRgb &r) : pos(q), color(r) { }
+    TFPoint(const QPoint &q, const QColor &r) :  pos(q), color(r.rgba()) { }
+
     QPoint pos;
     QRgb color;
-    TFPoint(const TFPoint &o): pos(o.pos), color(o.color){
-    }
-    TFPoint(const QPoint &q): pos(q) {
-    }
-    TFPoint(const QRgb &r) : color(r) {
-    }
-    TFPoint() : color(QColor(255,255,255).rgba()) {
-    }
-    TFPoint(const QPoint &q, const QRgb &r) : color(r), pos(q) {
-    }
-    TFPoint(const QPoint &q, const QColor &r) : color(r.rgba()), pos(q) {
-    }
 };
 
 class WFunction : public QWidget

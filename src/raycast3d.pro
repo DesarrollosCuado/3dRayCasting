@@ -26,7 +26,6 @@ SOURCES += raycast3d.cpp \
     transferfunction.cpp \
     wfunction.cpp \
     wtransferfunction.cpp \
-    util.cpp \
     Math/Interval.cpp \
     Math/IntPoint3D.cpp \
     Math/Matrix4x4f.cpp \

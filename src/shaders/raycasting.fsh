@@ -17,8 +17,12 @@ void main()
         vec4 view  = normalize(gl_TexCoord[0] - gl_ModelViewMatrixInverse * vec4(0.0, 0.0, 0.0, 1.0));
         view.w = 0.0;
 
-        vec3 minTexCoord(MIN_COORD_POS);
-        vec3 maxTexCoord(MAX_COORD_POS);
+        //gl_FragColor = clamp(vec4(posRay.xyz, 1.0), 0.0, 1.0);
+        //gl_FragDepth = gl_FragCoord.z;
+        //return;
+
+        vec3 minTexCoord = vec3(MIN_COORD_POS);
+        vec3 maxTexCoord = vec3(MAX_COORD_POS);
 
         float ray_step_acel=RAT_STEP;
 
@@ -31,13 +35,15 @@ void main()
             else
                 break;
 
-            result.rgb += result.a * col.rgb;
-            result.a   *= 1.0-col.a;
-            opacity += col.a*(1.0-opacity);
+            col.a       *= ray_step_acel;
+            result.rgb  += result.a * col.rgb;
+            result.a    *= 1.0-col.a;
+            opacity     += col.a*(1.0-opacity);
         }
 
         result.a = 1.0 - result.a;
-        if(result.a<(1.0-OP_THRESHOLD)) discard; //Fragmento demasiado transparente o sin ningun color
-        gl_FragColor = clamp(result, 0.0, 1.0);
+        if(result.a<(1.0-OP_THRESHOLD)) discard; //Fragmento demasiado transparente
+
+        gl_FragColor = clamp(vec4(result.xyz*result.a, 1.0), 0.0, 1.0);
         gl_FragDepth = gl_FragCoord.z;
 }

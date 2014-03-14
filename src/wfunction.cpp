@@ -1,6 +1,6 @@
 #include "wfunction.h"
 #include "wtransferfunction.h"
-#include "windows.h"
+
 #define SENSITIVE 8
 WFunction::WFunction(QWidget *parent)
 	: QWidget(parent)

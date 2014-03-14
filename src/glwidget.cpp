@@ -1,25 +1,24 @@
 #include "glwidget.h"
 #define PI 3.14159265f
 
-static void CheckErrorsGL(const char* location = NULL)
-{
+static void CheckErrorsGL(const char* location = NULL) {
   GLuint errnum;
   const char *errstr;
-  while (errnum = glGetError())
-  {
-    errstr = reinterpret_cast<const char *>(gluErrorString(errnum));
-    if(errstr)
-    {
-      qCritical() << errstr;
+    while ((errnum = glGetError())!=GL_NO_ERROR) {
+        errstr = reinterpret_cast<const char *>(gluErrorString(errnum));
+        if(errstr)
+        {
+            if(location)
+                qCritical() << "ErrorGL: " << errstr << " at " << location;
+            else
+                qCritical() << "ErrorGL " << errstr;
+        } else {
+            if(location)
+                qCritical() << "ErrorGL: " << errnum << " at " << location;
+            else
+                qCritical() << "ErrorGL " << errnum;
+        }
     }
-    else
-    {
-      qCritical() << "Error " << errnum;
-    }
-
-    if(location)
-      qCritical() << " at " << location;
-  }
 }
 
 GLWidget::GLWidget(QWidget *parent)
@@ -35,6 +34,8 @@ GLWidget::GLWidget(QWidget *parent)
     tfID = 0;
     volTex8 = NULL;
     volTex16 = NULL;
+    reloadFT = false;
+    reloadVol = false;
 }
 
 GLWidget::~GLWidget()
@@ -77,16 +78,20 @@ void GLWidget::setZTranslation(int distance)
 void GLWidget::initializeGL()
 {
     vs = new GLVertexShader(":/GLSL/shaders/raycasting.vsh");
+    qDebug()<<vs->log();
     fs = new GLFragmentShader(":/GLSL/shaders/raycasting.fsh");
+    qDebug()<<fs->log();
     glsl=new GLProgram;
 
     glsl->attach(*vs);
     if(glsl->failed())
         qCritical("Error Compiled Vertex GLSL");
+    qDebug()<<glsl->log();
 
     glsl->attach(*fs);
     if(glsl->failed())
         qCritical("Error Compiled Fragment GLSL");
+    qDebug()<<glsl->log();
 
     CheckErrorsGL("initializeGL-1");
 
@@ -144,6 +149,17 @@ void GLWidget::initializeGL()
     glPixelStorei(GL_UNPACK_ALIGNMENT,1);
     glTexImage1D(GL_TEXTURE_1D, 0, 4, TF_SIZE, 0, GL_RGBA, GL_FLOAT, pTexture);
     delete [] pTexture;
+    CheckErrorsGL("initializeGL-4");
+
+
+    // Inicializar Tiempo para FPS
+    m_time=QTime::currentTime();
+    sec=0;
+    fps=0;
+    m_timer = new QTimer(this);
+    m_timer->setInterval(1);
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(updateGL()));
+    m_timer->start();
 }
 
 void GLWidget::paintGL()
@@ -152,24 +168,44 @@ void GLWidget::paintGL()
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
-    glsl->bind();
+    CheckErrorsGL("paintGL-Init");
 
-    glTranslatef(trans.v[0], trans.v[1], trans.v[2]); //traslada
+    //glTranslatef(trans.v[0], trans.v[1], trans.v[2]); //traslada
     glTranslatef(0.0f,0.0f,-3.0f);
     glMultMatrixf(m_rotInvMatrix.m_vector);
+    CheckErrorsGL("paintGL-Matrix");
 
-
-    glEnable(GL_BLEND);
+    //glEnable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
     glDepthMask(GL_TRUE);
-    glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+    //glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
     glColor3f(0.5f, 0.5f, 0.5f);
     glTranslatef(-0.5f,-0.5f,-0.5f);
+    CheckErrorsGL("paintGL-CubeCenter");
+
+
+    glsl->bind();
+
+    glActiveTexture(GL_TEXTURE1_ARB);
+    glEnable(GL_TEXTURE_1D);
+    if(reloadFT) {
+        glBindTexture(GL_TEXTURE_1D, tfID);
+        RGBAf *pTexture = new RGBAf[TF_SIZE];
+        memset(pTexture, 0, TF_SIZE * sizeof(RGBAf));
+        tf->GetPostClassificationMap(pTexture);
+        glTexSubImage1D(GL_TEXTURE_1D, 0, 0, TF_SIZE, GL_RGBA, GL_FLOAT, pTexture);
+        delete [] pTexture;
+        reloadFT = false;
+        CheckErrorsGL("paintGL-TF-Upload");
+    }else{
+        glBindTexture(GL_TEXTURE_1D, tfID);
+        CheckErrorsGL("paintGL-TF-Bind");
+    }
+    glsl->setInt("tf", 1);
 
     glActiveTexture(GL_TEXTURE0_ARB);
     glEnable(GL_TEXTURE_3D);
@@ -195,32 +231,39 @@ void GLWidget::paintGL()
             delete [] volTex16;
             volTex16 = NULL;
         }
+        CheckErrorsGL("paintGL-Vol-Upload");
 
-        reloadFT = false;
+        reloadVol = false;
     }else{
         if(volume)
             glBindTexture(GL_TEXTURE_3D, volume);
+        CheckErrorsGL("paintGL-Vol-Bind");
     }
     glsl->setInt("volume", 0);
 
-    glActiveTexture(GL_TEXTURE1_ARB);
-    glEnable(GL_TEXTURE_1D);
-    if(reloadFT) {
-        glBindTexture(GL_TEXTURE_1D, tfID);
-        RGBAf *pTexture = new RGBAf[TF_SIZE];
-        memset(pTexture, 0, TF_SIZE * sizeof(RGBAf));
-        tf->GetPostClassificationMap(pTexture);
-        glTexSubImage1D(GL_TEXTURE_1D, 0, 0, TF_SIZE, GL_RGBA, GL_FLOAT, pTexture);
-        delete [] pTexture;
-        reloadFT = false;
-    }else{
-        glBindTexture(GL_TEXTURE_1D, tfID);
-    }
-    glsl->setInt("tf", 1);
-
     glCallList(primitiveList);
 
-    CheckErrorsGL("paintGL"); //Print Cube
+    CheckErrorsGL("paintGL-Cube"); //Print Cube
+
+    glsl->unbind();
+    glDisable(GL_BLEND);
+
+    //FPS counter
+    ++fps;
+    const int gamesT=m_time.msecsTo(QTime::currentTime());
+    const int secAct=gamesT/1000;
+    static float ratio = 0.0;
+    if(secAct!=sec){
+        ratio=double(fps)/double(secAct-sec);
+        sec=secAct;
+        setWindowTitle(QString("FPS: ")+QString::number(ratio));
+        fps=0;
+    }
+
+    // Display Debug Text
+    glColor3f(1.0f,1.0f,1.0f);
+    QString debugDisplay=QString("FPS: ")+QString::number(ratio)+QString(" Time: ")+QString::number(gamesT);
+    renderText(10,10,debugDisplay);
 }
 
 void GLWidget::resizeGL(int width, int height)
@@ -285,6 +328,7 @@ void GLWidget::setVol(unsigned char *vol, int w, int h, int z) {
     volSize[0] = w;
     volSize[1] = h;
     volSize[2] = z;
+    reloadVol = true;
     updateGL();
 }
 
@@ -298,3 +342,5 @@ void GLWidget::setVol(unsigned short *vol, int w, int h, int z) {
     reloadVol = true;
     updateGL();
 }
+
+

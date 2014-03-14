@@ -23,6 +23,9 @@ public:
     void resizeEvent(QResizeEvent * e);
     void keyPressEvent(QKeyEvent * e);
     void updateFT(CTFNode *pNodes, int nPoint);
+    void setVol(unsigned char *vol, int w, int h, int z);
+    void setVol(unsigned short *vol, int w, int h, int z);
+
 
 private:
     Ui::RayCast3dClass ui;

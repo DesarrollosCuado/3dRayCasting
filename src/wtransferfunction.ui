@@ -36,7 +36,7 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>75</width>
+     <width>111</width>
      <height>23</height>
     </rect>
    </property>
@@ -65,24 +65,7 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections>
-  <connection>
-   <sender>openVol</sender>
-   <signal>clicked()</signal>
-   <receiver>WTransferFunctionClass</receiver>
-   <slot>openVolume()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>42</x>
-     <y>41</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-4</x>
-     <y>82</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
  <slots>
   <slot>openVolume()</slot>
  </slots>
