@@ -9,6 +9,7 @@
 #include "glextensions.h"
 #include "glshaders.h"
 
+#include "Math/IntPoint3D.h"
 #include "Math/Vector3Df.h"
 #include "Math/Matrix4x4f.h"
 #include "transferfunction.h"
@@ -27,8 +28,8 @@ public:
     QSize sizeHint() const;
     void resizeGL(int width, int height);
     void setFT(CTransferFunction *tf);
-    void setVol(unsigned char *vol, int w, int h, int z);
-    void setVol(unsigned short *vol, int w, int h, int z);
+    void setVol(unsigned char *vol, CIntPoint3D size, CVector3Df scale);
+    void setVol(unsigned short *vol, CIntPoint3D size, CVector3Df scale);
 
 protected:
     void initializeGL();
@@ -51,6 +52,8 @@ private:
     unsigned int fps;
     unsigned int sec;
     unsigned int volSize[3];
+    float volScale[3];
+    float zoom;
     unsigned char volBits;
     unsigned char *volTex8;
     unsigned short *volTex16;

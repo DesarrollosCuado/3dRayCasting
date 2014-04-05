@@ -22,8 +22,12 @@ static void CheckErrorsGL(const char* location = NULL) {
 }
 
 GLWidget::GLWidget(QWidget *parent)
- : QGLWidget(parent), scale(1.0f, 1.0f, 1.0f), trans(0.0f, 0.0f, 0.0f)
+ : QGLWidget(QGLFormat(QGL::SampleBuffers), parent), scale(1.0f, 1.0f, 1.0f), trans(0.0f, 0.0f, 0.0f)
 {
+    if (!format().stencil())
+        qWarning("Could not get stencil buffer; results will be suboptimal");
+    if (!format().alpha())
+        qWarning("Could not get alpha channel; results will be suboptimal");
     m_rotMatrix.SetIdentity();
     m_rotInvMatrix.SetIdentity();
     vs=NULL;
@@ -65,7 +69,9 @@ void GLWidget::setXTranslation(int distance)
 
 void GLWidget::setYTranslation(int distance)
 {
-
+    zoom += float(distance)/100.0f;
+    if(zoom<0.1)zoom=0.1;
+    if(zoom>3.0)zoom=3.0;
     updateGL();
 }
 
@@ -92,6 +98,8 @@ void GLWidget::initializeGL()
     if(glsl->failed())
         qCritical("Error Compiled Fragment GLSL");
     qDebug()<<glsl->log();
+
+    zoom = 1.0f;
 
     CheckErrorsGL("initializeGL-1");
 
@@ -165,7 +173,7 @@ void GLWidget::initializeGL()
 void GLWidget::paintGL()
 {
     glMatrixMode(GL_MODELVIEW);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     CheckErrorsGL("paintGL-Init");
@@ -178,15 +186,16 @@ void GLWidget::paintGL()
     //glEnable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_ALPHA_TEST);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
     glDepthMask(GL_TRUE);
     //glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-
-    glColor3f(0.5f, 0.5f, 0.5f);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glScalef(volScale[0]*zoom, volScale[1]*zoom, volScale[2]*zoom);
     glTranslatef(-0.5f,-0.5f,-0.5f);
-    CheckErrorsGL("paintGL-CubeCenter");
 
+    CheckErrorsGL("paintGL-CubeCenter");
 
     glsl->bind();
 
@@ -207,9 +216,13 @@ void GLWidget::paintGL()
     }
     glsl->setInt("tf", 1);
 
+    CVector3Df voxelSize(0.5f/float(volSize[0]), 0.5f/float(volSize[1]), 0.5f/float(volSize[2]));
+    glsl->setFloat("voxelSize", voxelSize.Modulus());
+
     glActiveTexture(GL_TEXTURE0_ARB);
     glEnable(GL_TEXTURE_3D);
     if(reloadVol) {
+        zoom = 1.0f;
         if(volume)
             glDeleteTextures(1, &volume);
 
@@ -321,24 +334,30 @@ void GLWidget::setFT(CTransferFunction *_tf) {
     updateGL();
 }
 
-void GLWidget::setVol(unsigned char *vol, int w, int h, int z) {
+void GLWidget::setVol(unsigned char *vol, CIntPoint3D size, CVector3Df scale) {
     volBits = 8;
-    volTex8 = new unsigned char[w*h*z];
-    memcpy(volTex8, vol, sizeof(unsigned char)*w*h*z);
-    volSize[0] = w;
-    volSize[1] = h;
-    volSize[2] = z;
+    volSize[0] = size[0];
+    volSize[1] = size[1];
+    volSize[2] = size[2];
+    volScale[0] = scale[0];
+    volScale[1] = scale[1];
+    volScale[2] = scale[2];
+    volTex8 = new unsigned char[volSize[0]*volSize[1]*volSize[2]];
+    memcpy(volTex8, vol, sizeof(unsigned char)*volSize[0]*volSize[1]*volSize[2]);
     reloadVol = true;
     updateGL();
 }
 
-void GLWidget::setVol(unsigned short *vol, int w, int h, int z) {
+void GLWidget::setVol(unsigned short *vol, CIntPoint3D size, CVector3Df scale) {
     volBits = 16;
-    volTex16 = new unsigned short[w*h*z];
-    memcpy(volTex16, vol, sizeof(unsigned short)*w*h*z);
-    volSize[0] = w;
-    volSize[1] = h;
-    volSize[2] = z;
+    volSize[0] = size[0];
+    volSize[1] = size[1];
+    volSize[2] = size[2];
+    volScale[0] = scale[0];
+    volScale[1] = scale[1];
+    volScale[2] = scale[2];
+    volTex16 = new unsigned short[volSize[0]*volSize[1]*volSize[2]];
+    memcpy(volTex16, vol, sizeof(unsigned short)*volSize[0]*volSize[1]*volSize[2]);
     reloadVol = true;
     updateGL();
 }

@@ -54,7 +54,7 @@ void WFunction::paintEvent(QPaintEvent * paintEvent)
 	QPainter p(this);
 	p.setOpacity(1.0f);
 	QPen pen(QColor(0, 0, 0, 255), 1);
-	p.fillRect (0, 0, 2048, 256, QColor(255, 255, 255, 255));
+    p.fillRect (0, 0, 512, 256, QColor(255, 255, 255, 255));
 	//p.drawImage(target,fondo,sourceFondo);
 
     for (int i = 0; i < points.size()-1; ++i)

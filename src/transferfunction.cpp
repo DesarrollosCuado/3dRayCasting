@@ -124,7 +124,7 @@ void CTransferFunction ::GetPostClassificationMap(RGBAf *mapa)
     mapa[i][0] = m[i][0]*s + b[i][0];
     mapa[i][1] = m[i][1]*s + b[i][1];
     mapa[i][2] = m[i][2]*s + b[i][2];
-    mapa[i][3] = exp(-(m[i][3]*s + b[i][3]));
+    mapa[i][3] = m[i][3]*s + b[i][3];//exp(-(m[i][3]*s + b[i][3]));
     CLAMP_RGBA(mapa[i], 0.0f, 1.0f);
  }
 }

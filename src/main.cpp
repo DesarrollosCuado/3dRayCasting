@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     tf._parent = &w;
     vector <TFPoint> tmp;
     tmp.push_back(TFPoint(QPoint(0,0), QColor(0,0,0)));
-    tmp.push_back(TFPoint(QPoint(511,255), QColor(255,255,255)));
+    tmp.push_back(TFPoint(QPoint(512,255), QColor(255,255,255)));
     tf.setPointers(&tmp);
     w.show();
     tf.show();

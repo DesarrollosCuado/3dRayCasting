@@ -10,6 +10,7 @@
 #include <qfiledialog.h>
 #include "ui_raycast3d.h"
 #include "transferfunction.h"
+#include "Math/IntPoint3D.h"
 
 using namespace std;
 
@@ -23,8 +24,8 @@ public:
     void resizeEvent(QResizeEvent * e);
     void keyPressEvent(QKeyEvent * e);
     void updateFT(CTFNode *pNodes, int nPoint);
-    void setVol(unsigned char *vol, int w, int h, int z);
-    void setVol(unsigned short *vol, int w, int h, int z);
+    void setVol(unsigned char *vol, CIntPoint3D size, CVector3Df scale);
+    void setVol(unsigned short *vol, CIntPoint3D size, CVector3Df scale);
 
 
 private:

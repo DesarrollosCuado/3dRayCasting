@@ -25,10 +25,10 @@ void RayCast3d::updateFT(CTFNode *pNodes, int nPoints){
     ui.widget->setFT(new CTransferFunction(pNodes, nPoints));
 }
 
-void RayCast3d::setVol(unsigned char *vol, int w, int h, int z){
-    ui.widget->setVol(vol, w, h, z);
+void RayCast3d::setVol(unsigned char *vol, CIntPoint3D size, CVector3Df scale){
+    ui.widget->setVol(vol, size, scale);
 }
 
-void RayCast3d::setVol(unsigned short *vol, int w, int h, int z){
-    ui.widget->setVol(vol, w, h, z);
+void RayCast3d::setVol(unsigned short *vol, CIntPoint3D size, CVector3Df scale){
+    ui.widget->setVol(vol, size, scale);
 }
