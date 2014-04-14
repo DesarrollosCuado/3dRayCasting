@@ -175,6 +175,7 @@ void GLWidget::paintGL()
     glMatrixMode(GL_MODELVIEW);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearDepth(1.0);
     glLoadIdentity();
     CheckErrorsGL("paintGL-Init");
 
@@ -183,15 +184,15 @@ void GLWidget::paintGL()
     glMultMatrixf(m_rotInvMatrix.m_vector);
     CheckErrorsGL("paintGL-Matrix");
 
-    //glEnable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_ALPHA_TEST);
+    glEnable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
     glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
     //glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glScalef(volScale[0]*zoom, volScale[1]*zoom, volScale[2]*zoom);
     glTranslatef(-0.5f,-0.5f,-0.5f);
 
@@ -216,8 +217,8 @@ void GLWidget::paintGL()
     }
     glsl->setInt("tf", 1);
 
-    CVector3Df voxelSize(0.5f/float(volSize[0]), 0.5f/float(volSize[1]), 0.5f/float(volSize[2]));
-    glsl->setFloat("voxelSize", voxelSize.Modulus());
+    //CVector3Df voxelSize(0.5f/float(volSize[0]), 0.5f/float(volSize[1]), 0.5f/float(volSize[2]));
+    glsl->setFloat("voxelSize", 1.0f/(float)std::max(volSize[0], std::max(volSize[1], volSize[2])));//voxelSize.Modulus());
 
     glActiveTexture(GL_TEXTURE0_ARB);
     glEnable(GL_TEXTURE_3D);
