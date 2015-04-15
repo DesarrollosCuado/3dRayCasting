@@ -14,7 +14,4 @@ Visualizar Volumenes 3D en formato PVM y RAW
 		make
 		
 	- Como compilar en Windows:
-		Abrir proyecto dm3d.pro con QtCreator y ejecutar la aplicación.
-		
-	- Como ejecutar:
-		./DM3d
+		Abrir proyecto raycast3d.pro con QtCreator y ejecutar la aplicación.
